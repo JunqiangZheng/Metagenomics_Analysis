@@ -4149,7 +4149,7 @@ unassigned.
 
 Next is to think of a way to filter our file so we can extract sequences
 where the taxonomic classification is tha same for read 1 and 2,
-although for most it os different as we have observed.
+although for most it is different as we have observed.
 
 ``` r
 devtools::session_info()
