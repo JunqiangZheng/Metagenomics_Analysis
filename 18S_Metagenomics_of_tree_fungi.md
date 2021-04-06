@@ -1,4 +1,4 @@
-Yves Tchiechoua 18S Metegenomic analysis of Arbuscular Myrcorrhizal
+Yves Tchiechoua 18S Metegenomic analysis of Arbuscular Mycorrhizal
 Fungi (AMF) on Prunus africana Trees in Kenya and Cameroon
 ================
 Bernice Waweru
@@ -4148,7 +4148,7 @@ top hit for it to be considered a consensus assignment, otherwise its
 unassigned.
 
 Next is to think of a way to filter our file so we can extract sequences
-where the taxonomic classification is tha same for read 1 and 2,
+where the taxonomic classification is the same for read 1 and 2,
 although for most it is different as we have observed.
 
 ``` r
