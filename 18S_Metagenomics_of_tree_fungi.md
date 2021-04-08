@@ -21,8 +21,8 @@ Thu 08, Apr 2021
             -   [Calculate Alpha diversity](#calculate-alpha-diversity)
         -   [Working with the merged
             dataset](#working-with-the-merged-dataset)
-    -   [Taxonomic assignemnts or reads with BWA and
-        BLAST](#taxonomic-assignemnts-or-reads-with-bwa-and-blast)
+    -   [Taxonomic assignemnts of reads with BWA and
+        BLAST](#taxonomic-assignemnts-of-reads-with-bwa-and-blast)
         -   [March 11 2021](#march-11-2021)
         -   [April 8 2021](#april-8-2021)
             -   [Read length distribution of database
@@ -3823,7 +3823,7 @@ which feature.
 We need to understand this data better, can we trace which read pair
 generates which taxa?
 
-### Taxonomic assignemnts or reads with BWA and BLAST
+### Taxonomic assignemnts of reads with BWA and BLAST
 
 ##### March 11 2021
 
@@ -4247,7 +4247,7 @@ ggplot(ref_read_lens, aes(x=length)) + geom_histogram(binwidth = 100,color="blac
 
 We see that most of the reads are 500bp in length, not the full \~795 bp
 of the variable region target by the primer. Its also interesting though
-that we do have a few sequences longer than 100bp.
+that we do have a few sequences longer than 1000bp.
 
 ``` r
 devtools::session_info()
