@@ -2,11 +2,11 @@ Yves Tchiechoua 18S Metegenomic analysis of Arbuscular Myrcorrhizal
 Fungi (AMF) on Prunus africana Trees in Kenya and Cameroon
 ================
 Bernice Waweru
-Thu 08, Apr 2021
+Tue 22, Jun 2021
 
 -   [Study details summary](#study-details-summary)
 -   [Bioinformatics Analyses](#bioinformatics-analyses)
-    -   [Analysis with `qiime2/2020.8`](#analysis-with-qiime22020.8)
+    -   [Analysis with `qiime2/2020.8`](#analysis-with-qiime220208)
         -   [Importing data into qiime2 and inspecting number and
             quality of
             reads](#importing-data-into-qiime2-and-inspecting-number-and-quality-of-reads)
@@ -14,15 +14,15 @@ Thu 08, Apr 2021
             *Deblur*](#generating-feature-otu-table-with-deblur)
     -   [Analysis in R](#analysis-in-r)
         -   [Install the packages and prepare the input
-            data.](#install-the-packages-and-prepare-the-input-data.)
+            data.](#install-the-packages-and-prepare-the-input-data)
         -   [Use the functions](#use-the-functions)
-            -   [Function *otuReport* to summarise the two
+            -   [Function `*otuReport*` to summarise the two
                 datasets](#function-otureport-to-summarise-the-two-datasets)
             -   [Calculate Alpha diversity](#calculate-alpha-diversity)
         -   [Working with the merged
             dataset](#working-with-the-merged-dataset)
-    -   [Taxonomic assignemnts or reads with BWA and
-        BLAST](#taxonomic-assignemnts-or-reads-with-bwa-and-blast)
+    -   [Taxonomic assignemnts of reads with BWA and
+        BLAST](#taxonomic-assignemnts-of-reads-with-bwa-and-blast)
         -   [March 11 2021](#march-11-2021)
         -   [April 8 2021](#april-8-2021)
             -   [Read length distribution of database
@@ -123,13 +123,13 @@ reads.
 
 A look at the imported data;
 
-<img src="/Users\BWaweru/OneDrive%20-%20CGIAR/Documents/Fellows/Yves_Armel/jan_2021/report_images/fwd_reads_sample_counts.PNG" style="width:50.0%" alt="Forward reads sample counts" /><img src="/Users\BWaweru/OneDrive%20-%20CGIAR/Documents/Fellows/Yves_Armel/jan_2021/report_images/fwd_reads_quality_bars.PNG" style="width:50.0%" alt="Forward reads quality bars" />
+<img src="embedded-images/fwd_reads_sample_counts.PNG" style="width:50.0%" alt="Forward reads sample counts" /><img src="embedded-images/fwd_reads_quality_bars.PNG" style="width:50.0%" alt="Forward reads quality bars" />
 
 The forward reads are of good quality as we can see in the figure above,
 the quality seems to drop considerably after 265bp. Sample *S8* has very
 few reads, only 16. The reverse reads are below.
 
-<img src="/Users\BWaweru/OneDrive%20-%20CGIAR/Documents/Fellows/Yves_Armel/jan_2021/report_images/rev_reads_sample_counts.PNG" style="width:50.0%" alt="Reverse reads sample counts" /><img src="/Users\BWaweru/OneDrive%20-%20CGIAR/Documents/Fellows/Yves_Armel/jan_2021/report_images/rev_reads_quality_bars.PNG" style="width:50.0%" alt="Reverse reads quality bars" />
+<img src="embedded-images/rev_reads_sample_counts.PNG" style="width:50.0%" alt="Reverse reads sample counts" /><img src="embedded-images/rev_reads_quality_bars.PNG" style="width:50.0%" alt="Reverse reads quality bars" />
 
 The quality on the reverse reads is lower as expected for reverse reads
 with the Illumina sequencing technology. Quality drops after 220bp.
@@ -142,7 +142,7 @@ the reads already assigned to samples and the indices removed. We dig
 further to have a look at the de-multiplexing report that comes as part
 of the results in the folder for the miseq run,
 
-<img src="/Users\BWaweru/OneDrive%20-%20CGIAR/Documents/Fellows/Yves_Armel/jan_2021/report_images/per_sample_demultiplexing%20stats.PNG" style="width:50.0%" alt="Sample de-multiplexing stats" /><img src="/Users\BWaweru/OneDrive%20-%20CGIAR/Documents/Fellows/Yves_Armel/jan_2021/report_images/Sample_adapter_counts.PNG" style="width:50.0%" alt="Sample adapter counts" />
+<img src="embedded-images/per_sample_demultiplexing%20stats.PNG" style="width:50.0%" alt="Sample de-multiplexing stats" /><img src="embedded-images/Sample_adapter_counts.PNG" style="width:50.0%" alt="Sample adapter counts" />
 
 Above two tables reveal that sample *S8*, had a very low number of
 indexes/adapters identified from it, so this is probably a problem that
@@ -160,10 +160,99 @@ Both of these are meant to analyze *16S bacterial* sequences by default,
 using the Greengenes database for a positive filtering based approach to
 identifying features/OTUS after sequence quality control.
 
-We are working with *18S fungal* sequences. Of the two, deblur provides
-a plugin to provide a user-specified database to be used for positive
-alignment-based filtering to identify sequences. We use this so we can
-provide a custom fungal database that can be used.
+We are working with *18S fungal* sequences. Of the two, *Deblur*
+provides a plugin to provide a user-specified database to be used for
+positive alignment-based filtering to identify sequences. We use this so
+we can provide a custom fungal database that can be used.
+
+YT provided the files required to import the maarjAM database into
+qiime2. [This page](https://docs.qiime2.org/2021.4/tutorials/importing/)
+provides some information on how to import various data into qiime2,
+including fasta files and taxonomy files to be used as reference
+databases.
+
+Below are the commands we used on the cluster to import the files. This
+was done in a batch script.
+
+    #!/bin/bash
+    #SBATCH -p batch
+    #SBATCH -n 1
+    #SBATCH -e /home/bngina/Fellows/Yves_Tchiechoua/batch_logs/quality.%N.%J.err
+    #SBATCH -o /home/bngina/Fellows/Yves_Tchiechoua/batch_logs/quality.%N.%J.out
+    #SBATCH -J maarJAM_tax
+
+
+    module load qiime2/2020.8
+
+    #import the maarJAM database sequence and taxonomy
+
+    qiime tools import \
+     --type 'FeatureData[Sequence]' \
+     --input-path /home/bngina/Fellows/Yves_Tchiechoua/maarJAM_db/maarjAM.5.fasta \
+     --output-path /home/bngina/Fellows/Yves_Tchiechoua/maarJAM_db/maarJAM_18S_refdb.qza
+
+
+    qiime tools import \
+     --type 'FeatureData[Taxonomy]' \
+     --input-path /home/bngina/Fellows/Yves_Tchiechoua/maarJAM_db/maarjAM.id_to_taxonomy.5.txt \
+     --output-path /home/bngina/Fellows/Yves_Tchiechoua/maarJAM_db/maarjAM.18S_taxanomy.qza
+
+After importing the necessary files we then used to generate the feature
+table using the custom databases as reference. One thing to note is when
+working with *Deblur*, it will only work with the one set of the strands
+provided. If for example your input `.qza` file with your sequences
+includes both forward and reverse sequences, it will only pick the
+forward sequences and truncate them to the specified length before
+performing a positive based filter to look for 18S-like sequences in
+your data. Due to this, we analyzed our sequences separately, the
+forward and the reverse each as its own dataset. This is also a merit in
+this study because there was no overlap between our forward and revere
+data sequences.
+
+We used the below commands to process the forward and reverse sequences
+independently , only the input data changed. i.e forward or reverse.
+
+    #we run the feature table creation with deblur, with a custom maarjAM-18S database, with truncate lengths based on the data as seen in previus images above.
+
+    data_dir=/home/bngina/Fellows/Yves_Tchiechoua/qiime2_fwd_jan_2021
+    met='/home/bngina/Fellows/Yves_Tchiechoua/orig_data/metadata.tsv'
+
+
+    time qiime deblur denoise-other \
+     --i-demultiplexed-seqs ${data_dir}/yves_fwd.qza \
+     --i-reference-seqs /home/bngina/Fellows/Yves_Tchiechoua/maarJAM_db/maarJAM_18S_refdb.qza \
+     --p-trim-length 265 \
+     --p-sample-stats \
+     --o-table ${data_dir}/yves_fwd_deblur_marjm_265_table.qza \
+     --o-representative-sequences ${data_dir}/yves_fwd_deblur_marjm_265_repseqs.qza \
+     --o-stats ${data_dir}/yves_fwd_deblur_marjm_265_stats.qza
+
+
+    #visualize the output files
+
+    #the statistics
+    qiime metadata tabulate \
+      --m-input-file ${data_dir}/yves_fwd_deblur_marjm_265_stats.qza \
+      --o-visualization ${data_dir}/yves_fwd_deblur_marjm_265_stats.qzv
+
+    #the feature table
+    qiime feature-table summarize \
+     --i-table ${data_dir}/yves_fwd_deblur_marjm_265_table.qza \
+     --o-visualization ${data_dir}/yves_fwd_deblur_marjm_265_table.qzv \
+     --m-sample-metadata-file ${met}
+
+
+    #the rep sequences
+    qiime feature-table tabulate-seqs \
+     --i-data ${data_dir}/yves_fwd_deblur_marjm_265_repseqs.qza \
+     --o-visualization ${data_dir}/yves_fwd_deblur_marjm_265_repseqs.qzv
+
+The `qiime deblur denoise-other` command or pluggin as they are referred
+to within qiime2, generates three output file. A feature table with the
+number of 18S like sequences (referred to as features, hence feature
+table) and their counts as observed in each sample, a file with the
+sequence of each feature and statistics about the filtering steps and
+number of raw read sequences dropped and that passed to the next step.
 
 ### Analysis in R
 
@@ -233,7 +322,7 @@ names(rev)
 
 #### Use the functions
 
-##### Function *otuReport* to summarise the two datasets
+##### Function `*otuReport*` to summarise the two datasets
 
 ``` r
 otuReport(fwd, siteInCol = T, taxhead = "taxonomy", platform = "qiime", pattern = ";", percent = F, taxlevel = "family") -> fwd_otu_report
@@ -3364,7 +3453,7 @@ Now the questions;
 
 ##### Calculate Alpha diversity
 
-The relative abundance is calculated in percentange, hence the total of
+The relative abundance is calculated in percentage, hence the total of
 relative abundance per sample equals 100. In calculating the alpha
 diversity, we need to set a threshold for rare biosphere/taxa, by
 default its set at one as per the manual. We will go with that.
@@ -3776,10 +3865,10 @@ Glo G13\_VTX00067
 </tbody>
 </table>
 
-> Now we look a to see where if all the genera from the forward and
-> reverse reads are present in the merged dataset
+> Now we look a to see if all the genera from the forward and reverse
+> reads are present in the merged dataset
 
-We generate a dataframe we can use tho do the intersection
+We generate a dataframe we can use to do the intersection
 
 ``` r
 mgd_df <- data.frame(do.call(rbind, strsplit(as.vector(mgd_otu_report[[1]]), "->", fixed=TRUE)))
@@ -3823,7 +3912,7 @@ which feature.
 We need to understand this data better, can we trace which read pair
 generates which taxa?
 
-### Taxonomic assignemnts or reads with BWA and BLAST
+### Taxonomic assignemnts of reads with BWA and BLAST
 
 ##### March 11 2021
 
@@ -4247,7 +4336,7 @@ ggplot(ref_read_lens, aes(x=length)) + geom_histogram(binwidth = 100,color="blac
 
 We see that most of the reads are 500bp in length, not the full \~795 bp
 of the variable region target by the primer. Its also interesting though
-that we do have a few sequences longer than 100bp.
+that we do have a few sequences longer than 1000bp.
 
 ``` r
 devtools::session_info()
@@ -4263,79 +4352,84 @@ devtools::session_info()
     ##  collate  English_United States.1252  
     ##  ctype    English_United States.1252  
     ##  tz       Africa/Nairobi              
-    ##  date     2021-04-08                  
+    ##  date     2021-06-22                  
     ## 
     ## - Packages -------------------------------------------------------------------
     ##  package     * version date       lib source                            
     ##  assertthat    0.2.1   2019-03-21 [2] CRAN (R 4.0.3)                    
-    ##  callr         3.5.1   2020-10-13 [2] CRAN (R 4.0.3)                    
-    ##  cli           2.2.0   2020-11-20 [2] CRAN (R 4.0.3)                    
-    ##  cluster       2.1.0   2019-06-19 [2] CRAN (R 4.0.3)                    
-    ##  colorspace    2.0-0   2020-11-11 [2] CRAN (R 4.0.3)                    
-    ##  crayon        1.3.4   2017-09-16 [2] CRAN (R 4.0.3)                    
+    ##  cachem        1.0.5   2021-05-15 [2] CRAN (R 4.0.5)                    
+    ##  callr         3.7.0   2021-04-20 [2] CRAN (R 4.0.5)                    
+    ##  cli           2.5.0   2021-04-26 [2] CRAN (R 4.0.5)                    
+    ##  cluster       2.1.2   2021-04-17 [2] CRAN (R 4.0.5)                    
+    ##  colorspace    2.0-1   2021-05-04 [2] CRAN (R 4.0.5)                    
+    ##  crayon        1.4.1   2021-02-08 [2] CRAN (R 4.0.5)                    
     ##  DBI           1.1.1   2021-01-15 [2] CRAN (R 4.0.3)                    
-    ##  desc          1.2.0   2018-05-01 [2] CRAN (R 4.0.3)                    
-    ##  devtools    * 2.3.2   2020-09-18 [2] CRAN (R 4.0.3)                    
+    ##  desc          1.3.0   2021-03-05 [2] CRAN (R 4.0.5)                    
+    ##  devtools    * 2.4.2   2021-06-07 [2] CRAN (R 4.0.3)                    
     ##  digest        0.6.27  2020-10-24 [1] CRAN (R 4.0.3)                    
-    ##  dplyr       * 1.0.3   2021-01-15 [2] CRAN (R 4.0.3)                    
-    ##  ellipsis      0.3.1   2020-05-15 [2] CRAN (R 4.0.3)                    
+    ##  dplyr       * 1.0.6   2021-05-05 [2] CRAN (R 4.0.5)                    
+    ##  ellipsis      0.3.2   2021-04-29 [2] CRAN (R 4.0.5)                    
     ##  evaluate      0.14    2019-05-28 [2] CRAN (R 4.0.3)                    
-    ##  fansi         0.4.2   2021-01-15 [2] CRAN (R 4.0.3)                    
-    ##  farver        2.0.3   2020-01-16 [2] CRAN (R 4.0.3)                    
+    ##  fansi         0.5.0   2021-05-25 [2] CRAN (R 4.0.5)                    
+    ##  farver        2.1.0   2021-02-28 [2] CRAN (R 4.0.5)                    
+    ##  fastmap       1.1.0   2021-01-25 [2] CRAN (R 4.0.5)                    
     ##  fs            1.5.0   2020-07-31 [2] CRAN (R 4.0.3)                    
     ##  generics      0.1.0   2020-10-31 [2] CRAN (R 4.0.3)                    
-    ##  ggplot2     * 3.3.3   2020-12-30 [2] CRAN (R 4.0.3)                    
+    ##  ggplot2     * 3.3.4   2021-06-16 [2] CRAN (R 4.0.3)                    
     ##  glue          1.4.2   2020-08-27 [2] CRAN (R 4.0.3)                    
     ##  gtable        0.3.0   2019-03-25 [2] CRAN (R 4.0.3)                    
-    ##  highr         0.8     2019-03-20 [2] CRAN (R 4.0.3)                    
-    ##  htmltools     0.5.1   2021-01-12 [2] CRAN (R 4.0.3)                    
+    ##  highr         0.9     2021-04-16 [2] CRAN (R 4.0.5)                    
+    ##  htmltools     0.5.1.1 2021-01-22 [2] CRAN (R 4.0.5)                    
     ##  httr          1.4.2   2020-07-20 [2] CRAN (R 4.0.3)                    
-    ##  kableExtra  * 1.3.1   2020-10-22 [2] CRAN (R 4.0.3)                    
-    ##  knitr         1.30    2020-09-22 [2] CRAN (R 4.0.3)                    
+    ##  kableExtra  * 1.3.4   2021-02-20 [2] CRAN (R 4.0.5)                    
+    ##  knitr         1.33    2021-04-24 [2] CRAN (R 4.0.5)                    
     ##  labeling      0.4.2   2020-10-20 [2] CRAN (R 4.0.3)                    
-    ##  lattice     * 0.20-41 2020-04-02 [2] CRAN (R 4.0.3)                    
-    ##  lifecycle     0.2.0   2020-03-06 [2] CRAN (R 4.0.3)                    
+    ##  lattice     * 0.20-44 2021-05-02 [2] CRAN (R 4.0.5)                    
+    ##  lifecycle     1.0.0   2021-02-15 [2] CRAN (R 4.0.5)                    
     ##  magrittr    * 2.0.1   2020-11-17 [2] CRAN (R 4.0.3)                    
-    ##  MASS          7.3-53  2020-09-09 [2] CRAN (R 4.0.3)                    
-    ##  Matrix        1.3-2   2021-01-06 [2] CRAN (R 4.0.3)                    
-    ##  memoise       1.1.0   2017-04-21 [2] CRAN (R 4.0.3)                    
-    ##  mgcv          1.8-33  2020-08-27 [2] CRAN (R 4.0.3)                    
+    ##  MASS          7.3-54  2021-05-03 [2] CRAN (R 4.0.5)                    
+    ##  Matrix        1.3-4   2021-06-01 [2] CRAN (R 4.0.5)                    
+    ##  memoise       2.0.0   2021-01-26 [2] CRAN (R 4.0.5)                    
+    ##  mgcv          1.8-36  2021-06-01 [2] CRAN (R 4.0.5)                    
     ##  munsell       0.5.0   2018-06-12 [2] CRAN (R 4.0.3)                    
-    ##  nlme          3.1-151 2020-12-10 [2] CRAN (R 4.0.3)                    
+    ##  nlme          3.1-152 2021-02-04 [2] CRAN (R 4.0.5)                    
     ##  otuSummary  * 0.1.1   2021-01-29 [2] Github (cam315/otuSummary@0e620c7)
     ##  permute     * 0.9-5   2019-03-12 [2] CRAN (R 4.0.3)                    
-    ##  pillar        1.4.7   2020-11-20 [2] CRAN (R 4.0.3)                    
+    ##  pillar        1.6.1   2021-05-16 [2] CRAN (R 4.0.5)                    
     ##  pkgbuild      1.2.0   2020-12-15 [2] CRAN (R 4.0.3)                    
     ##  pkgconfig     2.0.3   2019-09-22 [2] CRAN (R 4.0.3)                    
-    ##  pkgload       1.1.0   2020-05-29 [2] CRAN (R 4.0.3)                    
+    ##  pkgload       1.2.1   2021-04-06 [2] CRAN (R 4.0.5)                    
     ##  plyr          1.8.6   2020-03-03 [2] CRAN (R 4.0.3)                    
     ##  prettyunits   1.1.1   2020-01-24 [2] CRAN (R 4.0.3)                    
-    ##  processx      3.4.5   2020-11-30 [2] CRAN (R 4.0.3)                    
-    ##  ps            1.5.0   2020-12-05 [2] CRAN (R 4.0.3)                    
+    ##  processx      3.5.2   2021-04-30 [2] CRAN (R 4.0.5)                    
+    ##  ps            1.6.0   2021-02-28 [2] CRAN (R 4.0.5)                    
     ##  purrr         0.3.4   2020-04-17 [2] CRAN (R 4.0.3)                    
     ##  R6            2.5.0   2020-10-28 [2] CRAN (R 4.0.3)                    
     ##  Rcpp          1.0.6   2021-01-15 [2] CRAN (R 4.0.3)                    
-    ##  remotes       2.2.0   2020-07-21 [2] CRAN (R 4.0.3)                    
+    ##  remotes       2.4.0   2021-06-02 [2] CRAN (R 4.0.5)                    
     ##  reshape2      1.4.4   2020-04-09 [2] CRAN (R 4.0.3)                    
-    ##  rlang         0.4.10  2020-12-30 [2] CRAN (R 4.0.3)                    
-    ##  rmarkdown     2.6     2020-12-14 [2] CRAN (R 4.0.3)                    
+    ##  rlang         0.4.11  2021-04-30 [2] CRAN (R 4.0.5)                    
+    ##  rmarkdown     2.9     2021-06-15 [2] CRAN (R 4.0.3)                    
     ##  rprojroot     2.0.2   2020-11-15 [2] CRAN (R 4.0.3)                    
     ##  rstudioapi    0.13    2020-11-12 [2] CRAN (R 4.0.3)                    
-    ##  rvest         0.3.6   2020-07-25 [2] CRAN (R 4.0.3)                    
+    ##  rvest         1.0.0   2021-03-09 [2] CRAN (R 4.0.5)                    
     ##  scales        1.1.1   2020-05-11 [2] CRAN (R 4.0.3)                    
     ##  sessioninfo   1.1.1   2018-11-05 [2] CRAN (R 4.0.3)                    
-    ##  stringi       1.5.3   2020-09-09 [2] CRAN (R 4.0.3)                    
+    ##  stringi       1.6.2   2021-05-17 [2] CRAN (R 4.0.3)                    
     ##  stringr       1.4.0   2019-02-10 [2] CRAN (R 4.0.3)                    
-    ##  testthat      3.0.1   2020-12-17 [2] CRAN (R 4.0.3)                    
-    ##  tibble        3.0.5   2021-01-15 [2] CRAN (R 4.0.3)                    
-    ##  tidyselect    1.1.0   2020-05-11 [2] CRAN (R 4.0.3)                    
-    ##  usethis     * 2.0.0   2020-12-10 [2] CRAN (R 4.0.3)                    
-    ##  vctrs         0.3.6   2020-12-17 [2] CRAN (R 4.0.3)                    
+    ##  svglite       2.0.0   2021-02-20 [2] CRAN (R 4.0.5)                    
+    ##  systemfonts   1.0.2   2021-05-11 [2] CRAN (R 4.0.5)                    
+    ##  testthat      3.0.2   2021-02-14 [2] CRAN (R 4.0.5)                    
+    ##  tibble        3.1.2   2021-05-16 [2] CRAN (R 4.0.5)                    
+    ##  tidyselect    1.1.1   2021-04-30 [2] CRAN (R 4.0.5)                    
+    ##  usethis     * 2.0.1   2021-02-10 [2] CRAN (R 4.0.5)                    
+    ##  utf8          1.2.1   2021-03-12 [2] CRAN (R 4.0.5)                    
+    ##  vctrs         0.3.8   2021-04-29 [2] CRAN (R 4.0.5)                    
     ##  vegan       * 2.5-7   2020-11-28 [2] CRAN (R 4.0.3)                    
-    ##  viridisLite   0.3.0   2018-02-01 [2] CRAN (R 4.0.3)                    
+    ##  viridisLite   0.4.0   2021-04-13 [2] CRAN (R 4.0.5)                    
     ##  webshot       0.5.2   2019-11-22 [2] CRAN (R 4.0.3)                    
-    ##  withr         2.4.0   2021-01-16 [2] CRAN (R 4.0.3)                    
-    ##  xfun          0.20    2021-01-06 [2] CRAN (R 4.0.3)                    
+    ##  withr         2.4.2   2021-04-18 [2] CRAN (R 4.0.5)                    
+    ##  xfun          0.24    2021-06-15 [2] CRAN (R 4.0.3)                    
     ##  xml2          1.3.2   2020-04-23 [2] CRAN (R 4.0.3)                    
     ##  yaml          2.2.1   2020-02-01 [2] CRAN (R 4.0.3)                    
     ## 
