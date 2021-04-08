@@ -1,8 +1,8 @@
-Yves Tchiechoua 18S Metegenomic analysis of Arbuscular Mycorrhizal
+Yves Tchiechoua 18S Metegenomic analysis of Arbuscular Myrcorrhizal
 Fungi (AMF) on Prunus africana Trees in Kenya and Cameroon
 ================
 Bernice Waweru
-Mon 29, Mar 2021
+Thu 08, Apr 2021
 
 -   [Study details summary](#study-details-summary)
 -   [Bioinformatics Analyses](#bioinformatics-analyses)
@@ -21,7 +21,12 @@ Mon 29, Mar 2021
             -   [Calculate Alpha diversity](#calculate-alpha-diversity)
         -   [Working with the merged
             dataset](#working-with-the-merged-dataset)
+    -   [Taxonomic assignemnts or reads with BWA and
+        BLAST](#taxonomic-assignemnts-or-reads-with-bwa-and-blast)
         -   [March 11 2021](#march-11-2021)
+        -   [April 8 2021](#april-8-2021)
+            -   [Read length distribution of database
+                reads](#read-length-distribution-of-database-reads)
 
 ## Study details summary
 
@@ -3818,7 +3823,9 @@ which feature.
 We need to understand this data better, can we trace which read pair
 generates which taxa?
 
-#### March 11 2021
+### Taxonomic assignemnts or reads with BWA and BLAST
+
+##### March 11 2021
 
 Set up for mapping with *bwa-mem*, first with the whole set of files
 which was taking too long, then repeat the mapping with sequences
@@ -4151,6 +4158,97 @@ Next is to think of a way to filter our file so we can extract sequences
 where the taxonomic classification is the same for read 1 and 2,
 although for most it is different as we have observed.
 
+#### April 8 2021
+
+From the above results, its clear we need to understand the data
+structure behind the [*maarjAM
+database*](https://maarjam.botany.ut.ee/?action=about). Further,we need
+to understand how the virtual taxa(VTX) are assigned. We notice that for
+some assignments, the read one and 2 are assigned to the same final
+virtual taxa, but the values of assignments beforer the VTX number os
+different and vice versa. How is this so?
+
+We need to read the [paper mentioned on the
+webpage](https://nph.onlinelibrary.wiley.com/doi/epdf/10.1111/j.1469-8137.2010.03334.x)
+that explains the database carefully, and understand the data structure.
+
+Also we agreed to look into other possible fungal databases that can be
+used to correctly classify the AMF sequences from our study. In
+particular databases that are regularly maintained and recently updated.
+In this regard, came across two that can be considered;
+
+1.  The [Protist Ribosomal Reference database i.e the PR2
+    databse](https://github.com/pr2database/pr2database). Its aim is to
+    provide a reference database of carefully annotated 18S rRNA
+    sequences using eight unique taxonomic fields (from kingdom to
+    species).Data files for use can be downloaded from
+    [here](https://github.com/pr2database/pr2database/releases). The
+    latest version, 4.13.0, was updated just last month.
+2.  The [UNITE](https://unite.ut.ee/).It is a database and sequence
+    management environment centered on the eukaryotic nuclear ribosomal
+    ITS region. Data files for use can be downloaded from
+    [here](https://unite.ut.ee/repository.php). Latest release was in
+    early 2020.
+
+##### Read length distribution of database reads
+
+We also needed to check the length distribution of the reads within the
+maarjAM database fasta file we have. To do that, we first count the
+lengths if the reds within the unix command line environment, then
+transfer the file to plot a histogram with R.
+
+We calculate the read lengths using the below code
+
+    #!/bin/bash
+
+    ref_dir='/home/bngina/Fellows/Yves_Tchiechoua/maarJAM_db'
+
+    # ===== count the number of reads and their lengths
+
+    for file in ${ref_dir}/*.fasta ;\
+    do echo ${file};\
+    echo ${file} 'total number of scaffolds' $(grep -c '^>' ${file}) $(awk '/^>/ {if (seqlen) print seqlen;print;seqlen=0;next} {seqlen+=length($0)}END{print seqlen}' ${file}) | sed "s/>/\n/g" >> ref_scaffolds_stats.txt ;\
+    done
+
+We upload the file into R;
+
+``` r
+# ===== we read the table skipping the first line that gives info on the file and number of reads (5,934)
+
+read.table(file = "data/ref_scaffolds_stats.txt") -> ref_read_lens
+
+# ===== checking it
+
+head(ref_read_lens)
+
+# ===== we rename the columns
+
+colnames(ref_read_lens) <- c("read_name", "length")
+names(ref_read_lens)
+
+# ==== now to plot a basic histogram
+hist(ref_read_lens$length)
+```
+
+![](18S_Metagenomics_of_tree_fungi_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+We use ggplot to get a better plot;
+
+``` r
+# ===== using ggplot2
+
+require(ggplot2)
+
+ggplot(ref_read_lens, aes(x=length)) + geom_histogram(binwidth = 100,color="black", fill="lightblue") + theme_grey() + 
+  labs(title = " Distribution of read lengths within the maarjAM database fasta file", x="Read length", y="Number of reads")
+```
+
+![](18S_Metagenomics_of_tree_fungi_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+We see that most of the reads are 500bp in length, not the full \~795 bp
+of the variable region target by the primer. Its also interesting though
+that we do have a few sequences longer than 100bp.
+
 ``` r
 devtools::session_info()
 ```
@@ -4165,7 +4263,7 @@ devtools::session_info()
     ##  collate  English_United States.1252  
     ##  ctype    English_United States.1252  
     ##  tz       Africa/Nairobi              
-    ##  date     2021-03-29                  
+    ##  date     2021-04-08                  
     ## 
     ## - Packages -------------------------------------------------------------------
     ##  package     * version date       lib source                            
@@ -4183,14 +4281,18 @@ devtools::session_info()
     ##  ellipsis      0.3.1   2020-05-15 [2] CRAN (R 4.0.3)                    
     ##  evaluate      0.14    2019-05-28 [2] CRAN (R 4.0.3)                    
     ##  fansi         0.4.2   2021-01-15 [2] CRAN (R 4.0.3)                    
+    ##  farver        2.0.3   2020-01-16 [2] CRAN (R 4.0.3)                    
     ##  fs            1.5.0   2020-07-31 [2] CRAN (R 4.0.3)                    
     ##  generics      0.1.0   2020-10-31 [2] CRAN (R 4.0.3)                    
+    ##  ggplot2     * 3.3.3   2020-12-30 [2] CRAN (R 4.0.3)                    
     ##  glue          1.4.2   2020-08-27 [2] CRAN (R 4.0.3)                    
+    ##  gtable        0.3.0   2019-03-25 [2] CRAN (R 4.0.3)                    
     ##  highr         0.8     2019-03-20 [2] CRAN (R 4.0.3)                    
     ##  htmltools     0.5.1   2021-01-12 [2] CRAN (R 4.0.3)                    
     ##  httr          1.4.2   2020-07-20 [2] CRAN (R 4.0.3)                    
     ##  kableExtra  * 1.3.1   2020-10-22 [2] CRAN (R 4.0.3)                    
     ##  knitr         1.30    2020-09-22 [2] CRAN (R 4.0.3)                    
+    ##  labeling      0.4.2   2020-10-20 [2] CRAN (R 4.0.3)                    
     ##  lattice     * 0.20-41 2020-04-02 [2] CRAN (R 4.0.3)                    
     ##  lifecycle     0.2.0   2020-03-06 [2] CRAN (R 4.0.3)                    
     ##  magrittr    * 2.0.1   2020-11-17 [2] CRAN (R 4.0.3)                    
