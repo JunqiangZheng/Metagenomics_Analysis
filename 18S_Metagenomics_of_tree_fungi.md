@@ -248,7 +248,97 @@ Let us have a look at some them;
 We start with the feature table;
 
 [Feature table of forward reads generated with
-deblur](view.qiime2.org/embedded-images/yves_fwd_deblur_marjm_265_table.qzv)
+deblur](embedded-images/yves_fwd_deblur_marjm_265_table.qzv) [Deblur
+representative sequences table of forward reads generated with
+deblur](embedded-images/yves_fwd_deblur_marjm_265_repseqs.qzv)
+
+After generating the tables, the next step is to classify the sequences
+into relevant taxonomic classifications. As we are using a custom
+database, we train the qiime2 classifier to use out maarjAM database
+using the recommended [plugin to train the
+naive-bayes-classifier](https://docs.qiime2.org/2021.4/tutorials/feature-classifier/).
+
+    #train the classifier with the sequences from the maarJAM database
+
+    time qiime feature-classifier fit-classifier-naive-bayes \
+     --i-reference-reads /home/bngina/Fellows/Yves_Tchiechoua/maarJAM_db/maarJAM_18S_refdb.qza  \
+     --i-reference-taxonomy /home/bngina/Fellows/Yves_Tchiechoua/maarJAM_db/maarjAM.18S_taxanomy.qza \
+     --o-classifier /home/bngina/Fellows/Yves_Tchiechoua/maarJAM_db/maarJAM_classifier.qza
+
+Once the classifier is ready we use it to classify our feature
+sequences, then generate a bar plot to have a looka the classification.
+
+    # use the classifier to classifiy our reads from deblur identified using the maarJAM db
+
+    time qiime feature-classifier classify-sklearn \
+     --i-classifier /home/bngina/Fellows/Yves_Tchiechoua/maarJAM_db/maarJAM_classifier.qza \
+     --i-reads  ${data_dir}/yves_fwd_deblur_marjm_265_repseqs.qza \
+     --o-classification ${data_dir}/yves_fwd_deblur_marjm_265_repseqs_taxonomy.qza
+
+    #visualize the taxonomic classification table and then do the barplots
+
+    time qiime metadata tabulate \
+     --m-input-file ${data_dir}/yves_fwd_deblur_marjm_265_repseqs_taxonomy.qza \
+     --o-visualization ${data_dir}/yves_fwd_deblur_marjm_265_repseqs_taxonomy.qzv
+
+    #the barplot
+
+    time qiime taxa barplot \
+     --i-table ${data_dir}/yves_fwd_deblur_marjm_265_table.qza \
+     --i-taxonomy ${data_dir}/yves_fwd_deblur_marjm_265_repseqs_taxonomy.qza \
+     --m-metadata-file ${met} \
+     --o-visualization ${data_dir}/yves_fwd_deblur_marjm_265_repseqs_taxa_bar_plot.qzv
+
+Once we have the feature tables and taxonomic classification, we export
+the data for further processing with R. We use plugins within qiime2 for
+this.
+
+    #!/bin/bash
+
+    #export files generated with qiime to be used for analysis with R packages
+
+    module load qiime2/2020.8
+
+    #directories
+
+    fwd='/home/bngina/Fellows/Yves_Tchiechoua/qiime2_fwd_jan_2021'
+    rev='/home/bngina/Fellows/Yves_Tchiechoua/qiime2_rev_jan_2021'
+    met='/home/bngina/Fellows/Yves_Tchiechoua/orig_data/metadata.tsv'
+    out='/home/bngina/Fellows/Yves_Tchiechoua/exported_files'
+
+    qiime tools export \
+     --input-path ${fwd}/yves_fwd_deblur_marjm_265_table.qza  \
+     --output-path ${out}/yves_fwd_deblur_marjm_265_table
+
+    #convert extracted biom table to tsv
+
+    biom convert \
+     --input-fp ${out}/yves_fwd_deblur_marjm_265_table/feature-table.biom \
+     --output-fp ${out}/yves_fwd_deblur_marjm_265_table.tsv \
+     --to-tsv \
+    # --sample-metadata-fp ${met}
+
+
+    qiime tools export \
+     --input-path ${rev}/yves_rev_deblur_marjm_240_table.qza  \
+     --output-path ${out}/yves_rev_deblur_marjm_240_table
+
+    biom convert \
+     --input-fp ${out}/yves_rev_deblur_marjm_240_table/feature-table.biom \
+     --output-fp ${out}/yves_rev_deblur_marjm_240_table.tsv \
+     --to-tsv \
+     --sample-metadata-fp ${met}
+
+
+    #open converted table change OTU ID to OTUID
+
+    #export taxonomy table
+
+    qiime tools export \
+     --input-path ${fwd}/yves_fwd_deblur_marjm_265_repseqs_taxonomy.qza \
+     --output-path ${out}/yves_fwd_deblur_marjm_265_repseqs_taxonomy.tsv
+
+    # Manually change "feature ID" to "OTUID"
 
 ## [Analysis in R](https://github.com/bnwaweru/Metagenomics_Analysis/blob/master/Evaluating-result-feature-tables-with-R.md)
 
